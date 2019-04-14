@@ -8,6 +8,6 @@
 
 ### 目录
 
-- 决策树
+- [决策树](./decision_tree/decision_tree.md)
 - 支持向量机(SVM)
 
