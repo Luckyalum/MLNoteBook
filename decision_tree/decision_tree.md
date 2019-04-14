@@ -529,3 +529,4 @@ demo:
 ![基尼指数准则](./img/基尼指数准则.png) 
 我们看到，在最优划分属性的选择上，他们确实是不同的，值得注意的是，在纹理=清晰这颗子树上，信息增益准则选择了属性根蒂（有三个取值），而信息增益率选择了属性触感（有两个取值），这个结果或多或少验证了我们之前所说的信息增益会对可取值数目较多的属性有所偏好，而信息增益率会对可取值数目较少的属性有所偏好。
 
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
