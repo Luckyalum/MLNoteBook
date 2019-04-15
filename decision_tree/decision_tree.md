@@ -1,9 +1,40 @@
 ### 决策树
 
+
+### 目录  
+  - <a href="#概述">概述</a>
+  - <a href="#准备工作">准备工作</a>
+  - <a href="#数据集">数据集</a> 
+  - <a href="#定义">定义</a>
+  - <a href="#选择最优划分属性">选择最优划分属性</a>
+  - <a href="#实现第一个决策树">实现第一个决策树</a>
+  - <a href="#预测新数据">预测新数据</a>
+  - <a href="#概述">概述</a>   
+
 ### 概述  
 决策树（Decision Tree）算法是一类常见的机器学习算法。决策树模型呈树形结构，在分类问题中，表示基于特征对实例进行分类的过程。它可以认为是 if-then 规则的集合，也可以认为是定义在特征空间与类空间上的条件概率分布。  
 决策树学习通常包括 3 个步骤：特征选择、决策树的生成和决策树的修剪。  
 <!--more-->
+
+### 准备工作  
+本章需要用到的包如下：
+- math
+- operator
+- itertools
+
+你可以直接使用下面的requirements.txt:
+```txt
+math==1.0.0
+```
+每部分代码的开始，你可以用下面的代码来import相应的package
+```python
+#-*- coding=utf-8 -*-
+from math import log
+import itertools
+import operator
+import random
+import re
+```
 
 ### 数据集
 我们使用《机器学习》一书中的西瓜数据集和《机器学习实战》中的隐形眼镜数据集作为我们的数据集。  
@@ -54,6 +85,13 @@
 3  2  2  1  3
 3  2  2  2  3
 ```  
+使用下面的代码来读取数据集，以隐形眼镜数据集为例：
+```python
+fr = open('./lenses.txt')
+lenses = [inst.strip().split('  ') for inst in fr.readlines()]
+lensesLabels = ['age','prescript','astigmatic','tearRate']
+```
+
 ### 定义 
 决策树的定义：  
 分类决策树模型是一种描述对实例进行分类的树形结构。决策树由结点（node）和有向边（directed edge）组成。结点有两种类型：内部结点（internal node）和叶结点（leaf node）。内部结点表示一个特征或属性(features)，叶结点表示一个类(labels)。  
@@ -65,12 +103,18 @@
 
 ### 选择最优划分属性  
  
-从上面的介绍中可以看出，关键在于如何最优划分属性，一般的，随着划分过程的不断进行，我们希望决策树的分支结点所包含的样本尽可能属于同一类别，即结点的纯度越来越高。所以我们有了下面的关于如何选择最优划分属性的各种定义：   
-#### 信息熵 
-信息熵(information)是度量样本集合纯度常用的一种指标。假定当前样本集合D中第k类样本所占比例为pk,则D的信息熵定义如下： 
+从上面的介绍中可以看出，关键在于如何最优划分属性，一般的，随着划分过程的不断进行，我们希望决策树的分支结点所包含的样本尽可能属于同一类别，即结点的纯度越来越高。所以我们有了下面的关于如何选择最优划分属性的相关定义：
+- <a href="#信息增益">信息增益</a>
+- <a href="#信息增益率">信息增益率</a>
+- <a href="#基尼指数">基尼指数</a>
+   
 
-$$Ent(D)=\sum_{k=1}^{|γ|}p_klog_2p_k$$ 
+#### 信息增益  
+介绍信息增益前，需要先介绍信息熵。**信息熵**(information entropy)是度量样本集合纯度常用的一种指标。假定当前样本集合D中第k类样本所占比例为pk,则D的信息熵定义如下： 
 
+$$Ent(D)=-\sum_{k=1}^{|\lambda|}p_klog_2p_k$$ 
+
+python实现如下，其实就是实现上面的公式：  
 ```python
 #计算信息熵
 def calEnt(dataSet):
@@ -90,9 +134,24 @@ def calEnt(dataSet):
         Ent += -p_current*log(p_current,2) 
     return Ent
 ```
-#### 信息增益 
-信息增益(information gain)： 在划分数据集前后信息发生的变化称为信息增益。假定离散属性a有V个可能的取值，若使用a来对样本集合D进行划分，则会产生V个分支结点，其中第v个分支结点包含了D中所有在属性a上取值为av的样本，记为Dv。于是用属性a对样本集D进行划分所获得的信息增益如下：  
-![信息增益](./img/Gain.png)  
+
+**信息增益**(information gain)： 在划分数据集前后信息发生的变化称为信息增益（ID3决策树算法）。假定离散属性a有V个可能的取值，若使用a来对样本集合D进行划分，则会产生V个分支结点，其中第v个分支结点包含了D中所有在属性a上取值为av的样本，记为Dv。于是用属性a对样本集D进行划分所获得的信息增益如下：  
+
+$$Gain(D,a) = Ent(D)-\sum_{v=1}^V{\frac{D^v}{D}Ent(D^V)} $$
+
+首先我们需要写一个计算Dv的函数，实质就是获取dataSet中所有在属性axis上取值为value的样本。举个例子，西瓜数据集，axis=色泽，value=“青绿”，则该函数返回dataSet中所有色泽=青绿的西瓜构成的子集。
+```python
+#根据axis和value划分数据集
+def splitDataSet(dataSet, axis, value):
+    retDataSet = []
+    for featVec in dataSet:
+        if featVec[axis] == value:
+            reducedFeatVec = featVec[:axis]
+            reducedFeatVec.extend(featVec[axis+1:])
+            retDataSet.append(reducedFeatVec)
+    return retDataSet 
+```
+接下来就是实现上面的公式：  
 ```python
 #计算信息增益
 def calGain(dataSet, feature, baseEnt):
@@ -106,12 +165,15 @@ def calGain(dataSet, feature, baseEnt):
     Gain = baseEnt - newEntropy
     return Gain
 ```
-feature即所计算的特征的index，baseEnt就是Ent(D)，因为计算每个属性的信息增益都需要这个，为了避免重复计算，就作为输入了。
+feature即所计算的特征的index，baseEnt就是Ent(D)，因为计算每个属性的信息增益都需要这个，为了避免重复计算，就作为输入了。  
 #### 信息增益率
-引文实际情况中信息增益准则对可取值数目较多的属性有所偏好，为减少这种偏好带来的不利影响，可以使用信息增益率(gain ratio)来选择最优划分属性。  
-![信息增益率](./img/gain_ratio.png)  
-IV(a)称为属性a的固有值(instrinsic value)。属性a的可能取值数目越多(即V越大)，则IV(a)的值通常会越大。  
-问题又来了，信息增益率又会对可取值数目较少的属性有所偏好，因此著名的C4.5算法使用了一个启发式：先从候选划分属性中找出信息增益高于平均水平的属性，在从中选择增益率最高的。这里不做深入探讨。  
+因为**实际情况中信息增益准则对可取值数目较多的属性有所偏好**，为减少这种偏好带来的不利影响，可以使用**信息增益率**(gain ratio)来选择最优划分属性（C4.5决策树算法）。  
+
+$$Gain_ratio(D,a) = \frac{Gain(D,a)}{IV(a)} $$
+$$IV(a) = -\sum_{v=1}^V\frac{|D^v|}{D}log_2\frac{|D^v|}{D} $$
+
+IV(a)称为属性a的固有值(instrinsic value)。属性a的可能取值数目越多(即V越大)，则IV(a)的值通常会越大（从公式上看，也和信息熵相似）。  
+问题又来了，信息增益率又会对可取值数目较少的属性有所偏好，因此著名的C4.5算法使用了一个启发式：先从候选划分属性中找出信息增益高于平均水平的属性，在从中选择增益率最高的。这里就不做深入探讨。  
 ```python
 def calGainRatio(dataSet, feature, baseEnt):
     featList = [example[feature] for example in dataSet]
@@ -125,14 +187,17 @@ def calGainRatio(dataSet, feature, baseEnt):
     return Gain
 ```
 #### 基尼指数 
-上面都以信息熵为基础，也可以使用其他指标来度量，比如基尼指数(Gini index)。数据集D的纯度可以用基尼值来度量：  
-![Gini](./img/gini.png)  
+上面都以信息熵为基础，也可以使用其他指标来度量，比如**基尼指数**(Gini index)。数据集D的纯度可以用基尼值来度量（CART决策树）：  
+
+$$Gini(D) = \sum_{k=1}^{|\lambda|}\sum_{k'\neq k}p_k p_{k'}$$
+$$=1-\sum_{k=1}^{|\lambda|}p_k^2$$
+
 ```python
 #计算基尼值
 def calGini(dataSet):
     numEntries = len(dataSet)
     labelCounts = {}
-    Gini = 0
+    Gini = 1.0
     for featVec in dataSet:
         currentLabel = featVec[-1]
         if currentLabel not in labelCounts.keys():
@@ -143,12 +208,14 @@ def calGini(dataSet):
     #获得p的两两组合的list
     comList = itertools.combinations(pList,2)
     for item in comList:
-        Gini += item[0]*item[1]
+        Gini += -item[0]*item[1]
     return Gini
 ```
 直观来说，Gini(D反映了从数据集D中随机抽取两个样本，其类别标记不一致的概率。因此Gini(D)越小，则数据集D的纯度越高。
 属性a 的基尼指数定义为：  
-![Gini Index](./img/gini_index.png)  
+
+$$Gini_index(D,a) = \sum_{v=1}^V\frac{|D^v|}{D}Gini(D^v)$$
+
 ```python
 #计算基尼指数
 def calGiniIndex(dataSet, feature):
@@ -161,21 +228,13 @@ def calGiniIndex(dataSet, feature):
         GiniIndex += p_current*calGini(subDataSet)
     return GiniIndex 
 ```
-### 实现
+我们在候选属性集合A中，选择使得划分后基尼指数最小的属性，即：
+
+$$a_* = arg min_{a\in A}Gini_index(D,a)$$
+  
+### 实现第一个决策树
 除了上面的计算各个指数的代码之外，我们还需要添加一些别的函数。  
-#### 划分数据集
-axis是按照哪个属性划分，value，是指该属性上的取值，举个例子，西瓜数据集，axis=色泽的index，value=“青绿”，则该函数返回dataSet中所有色泽=青绿的西瓜构成的子集。
-```python
-#划分数据集
-def splitDataSet(dataSet, axis, value):
-    retDataSet = []
-    for featVec in dataSet:
-        if featVec[axis] == value:
-            reducedFeatVec = featVec[:axis]
-            reducedFeatVec.extend(featVec[axis+1:])
-            retDataSet.append(reducedFeatVec)
-    return retDataSet
-```
+
 #### 选择特征
 根据不同的度量方法，有不同的选择方法，其中Gain和GainRatio都是选择最大值，GiniIndex选择最小值
 ```python
@@ -231,17 +290,14 @@ def majorityCnt(classList):
     return sortedClassCount[0][0]
 ```
 #### 构造树
-注释中解释了《机器学习实战》中出现的错误。
+使用递归的方法创建树。注释中解释了《机器学习实战》中出现的错误。
 ```python
 #建立树
 def createTree(dataSet, labels, divide_by="gain"):
     classList = [example[-1] for example in dataSet]
-    # 如果数据集的最后一列的第一个值出现的次数=整个集合的数量，
-    # 也就说只有一个类别，就只直接返回结果就行
     # 第一个停止条件：所有的类标签完全相同，则直接返回该类标签。
     if classList.count(classList[0]) == len(classList):
         return classList[0]
-    # 如果数据集只有1列，那么最初出现label次数最多的一类，作为结果
     # 第二个停止条件：使用完了所有特征，仍然不能将数据集划分成仅包
     # 含唯一类别的分组。
     if len(dataSet[0]) == 1:
@@ -268,8 +324,9 @@ def createTree(dataSet, labels, divide_by="gain"):
                                         subLabels,divide_by)
     return myTree
 ```
-#### 分类器
-构造树后我们就要用这个树来对未知数据进行分类。inputTree就是上面得到的树，featLabels为标签向量，如watermelonLabels=['色泽', '根蒂', '敲声', '纹理', '脐部', '触感']，testVec为测试向量，如["青绿","蜷缩","浊响","清晰","凹陷","硬滑"].
+
+### 预测新数据
+构造树后我们就要用这个树来对未知数据进行分类，也就是预测。inputTree就是上面得到的树，featLabels为标签向量，如watermelonLabels=['色泽', '根蒂', '敲声', '纹理', '脐部', '触感']，testVec为测试向量，如["青绿","蜷缩","浊响","清晰","凹陷","硬滑"].
 ```python
 #分类器 
 def classify(inputTree, featLabels, testVec):
