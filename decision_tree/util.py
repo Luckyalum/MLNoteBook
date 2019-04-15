@@ -163,3 +163,5 @@ def chooseBestFeatureByGiniIndex(dataSet):
             bestGiniIndex = GiniIndex
             bestFeature = i
     return bestFeature
+
+

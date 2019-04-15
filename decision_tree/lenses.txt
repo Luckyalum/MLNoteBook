@@ -1,24 +1,24 @@
-1  1  1  1  3
-1  1  1  2  2
-1  1  2  1  3
-1  1  2  2  1
-1  2  1  1  3
-1  2  1  2  2
-1  2  2  1  3
-1  2  2  2  1
-2  1  1  1  3
-2  1  1  2  2
-2  1  2  1  3
-2  1  2  2  1
-2  2  1  1  3
-2  2  1  2  2
-2  2  2  1  3
-2  2  2  2  3
-3  1  1  1  3
-3  1  1  2  3
-3  1  2  1  3
-3  1  2  2  1
-3  2  1  1  3
-3  2  1  2  2
-3  2  2  1  3
-3  2  2  2  3
+young  myope  no  reduced  not fitted  
+young  myope  no  mormal  soft  
+young  myope  yes  reduced  not fitted  
+young  myope  yes  mormal  hard  
+young  pre-hypermetrope  no  reduced  not fitted  
+young  pre-hypermetrope  no  mormal  soft  
+young  pre-hypermetrope  yes  reduced  not fitted  
+young  pre-hypermetrope  yes  mormal  hard  
+pre-presbyopic  myope  no  reduced  not fitted  
+pre-presbyopic  myope  no  mormal  soft  
+pre-presbyopic  myope  yes  reduced  not fitted  
+pre-presbyopic  myope  yes  mormal  hard  
+pre-presbyopic  pre-hypermetrope  no  reduced  not fitted  
+pre-presbyopic  pre-hypermetrope  no  mormal  soft  
+pre-presbyopic  pre-hypermetrope  yes  reduced  not fitted  
+pre-presbyopic  pre-hypermetrope  yes  mormal  not fitted  
+presbyopic  myope  no  reduced  not fitted  
+presbyopic  myope  no  mormal  not fitted  
+presbyopic  myope  yes  reduced  not fitted  
+presbyopic  myope  yes  mormal  hard  
+presbyopic  pre-hypermetrope  no  reduced  not fitted  
+presbyopic  pre-hypermetrope  no  mormal  soft  
+presbyopic  pre-hypermetrope  yes  reduced  not fitted  
+presbyopic  pre-hypermetrope  yes  mormal  not fitted  

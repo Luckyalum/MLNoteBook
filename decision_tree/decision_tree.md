@@ -9,7 +9,12 @@
   - <a href="#选择最优划分属性">选择最优划分属性</a>
   - <a href="#实现第一个决策树">实现第一个决策树</a>
   - <a href="#预测新数据">预测新数据</a>
-  - <a href="#概述">概述</a>   
+  - <a href="#持久化">持久化</a> 
+  - <a href="#可视化">可视化</a> 
+  - <a href="#剪枝">剪枝</a>   
+  - <a href="#连续和缺失值处理">连续和缺失值处理</a> 
+  - <a href="#多变量">多变量</a> 
+  - <a href="#最后">持久化</a> 
 
 ### 概述  
 决策树（Decision Tree）算法是一类常见的机器学习算法。决策树模型呈树形结构，在分类问题中，表示基于特征对实例进行分类的过程。它可以认为是 if-then 规则的集合，也可以认为是定义在特征空间与类空间上的条件概率分布。  
@@ -21,7 +26,7 @@
 - math
 - operator
 - itertools
-
+- pickle
 你可以直接使用下面的requirements.txt:
 ```txt
 math==1.0.0
@@ -34,6 +39,8 @@ import itertools
 import operator
 import random
 import re
+import pickle
+import matplotlib.pyplot as plt
 ```
 
 ### 数据集
@@ -58,7 +65,47 @@ import re
 浅白,蜷缩,浊响,模糊,平坦,硬滑,否  
 青绿,蜷缩,沉闷,稍糊,稍凹,硬滑,否  
 ```
-隐形眼镜数据集 (lenses.txt)：
+西瓜数据集2.0$\alpha$ (watermelon2.0_alpha.txt) 无连续属性，有缺失值:  
+```txt
+,蜷缩,浊响,清晰,凹陷,硬滑,是  
+乌黑,蜷缩,沉闷,清晰,凹陷,,是  
+乌黑,蜷缩,,清晰,凹陷,硬滑,是  
+青绿,蜷缩,沉闷,清晰,凹陷,硬滑,是  
+,蜷缩,浊响,清晰,凹陷,硬滑,是  
+青绿,稍蜷,浊响,清晰,,软粘,是  
+乌黑,稍蜷,浊响,稍糊,稍凹,软粘,是  
+乌黑,稍蜷,浊响,,稍凹,硬滑,是  
+乌黑,,沉闷,稍糊,稍凹,硬滑,否  
+青绿,硬挺,清脆,,平坦,软粘,否  
+浅白,硬挺,清脆,模糊,平坦,,否  
+浅白,蜷缩,,模糊,平坦,软粘,否  
+,稍蜷,浊响,稍糊,凹陷,硬滑,否  
+浅白,稍蜷,沉闷,稍糊,凹陷,硬滑,否  
+乌黑,稍蜷,浊响,清晰,,软粘,否  
+浅白,蜷缩,浊响,模糊,平坦,硬滑,否  
+青绿,,沉闷,稍糊,稍凹,硬滑,否 
+```
+西瓜数据集3.0 (watermelon3.0.txt) 有连续属性，无缺失值:  
+```txt
+青绿,蜷缩,浊响,清晰,凹陷,硬滑,0.697,0.46,是  
+乌黑,蜷缩,沉闷,清晰,凹陷,硬滑,0.774,0.376,是  
+乌黑,蜷缩,浊响,清晰,凹陷,硬滑,0.634,0.264,是  
+青绿,蜷缩,沉闷,清晰,凹陷,硬滑,0.608,0.318,是  
+浅白,蜷缩,浊响,清晰,凹陷,硬滑,0.556,0.215,是  
+青绿,稍蜷,浊响,清晰,稍凹,软粘,0.403,0.237,是  
+乌黑,稍蜷,浊响,稍糊,稍凹,软粘,0.481,0.149,是  
+乌黑,稍蜷,浊响,清晰,稍凹,硬滑,0.437,0.211,是  
+乌黑,稍蜷,沉闷,稍糊,稍凹,硬滑,0.666,0.091,否  
+青绿,硬挺,清脆,清晰,平坦,软粘,0.243,0.267,否  
+浅白,硬挺,清脆,模糊,平坦,硬滑,0.245,0.057,否  
+浅白,蜷缩,浊响,模糊,平坦,软粘,0.343,0.099,否  
+青绿,稍蜷,浊响,稍糊,凹陷,硬滑,0.639,0.161,否  
+浅白,稍蜷,沉闷,稍糊,凹陷,硬滑,0.657,0.198,否  
+乌黑,稍蜷,浊响,清晰,稍凹,软粘,0.36,0.37,否  
+浅白,蜷缩,浊响,模糊,平坦,硬滑,0.593,0.042,否  
+青绿,蜷缩,沉闷,稍糊,稍凹,硬滑,0.719,0.103,否
+```
+隐形眼镜数据集 (lenses.txt)[链接](http://archive.ics.uci.edu/ml/datasets/Lenses)：
 ```txt
 1  1  1  1  3
 1  1  1  2  2
@@ -85,6 +132,33 @@ import re
 3  2  2  1  3
 3  2  2  2  3
 ```  
+我们把它转换成文字描述，便于后续处理：  
+```txt
+young  myope  no  reduced  not fitted  
+young  myope  no  mormal  soft  
+young  myope  yes  reduced  not fitted  
+young  myope  yes  mormal  hard  
+young  pre-hypermetrope  no  reduced  not fitted  
+young  pre-hypermetrope  no  mormal  soft  
+young  pre-hypermetrope  yes  reduced  not fitted  
+young  pre-hypermetrope  yes  mormal  hard  
+pre-presbyopic  myope  no  reduced  not fitted  
+pre-presbyopic  myope  no  mormal  soft  
+pre-presbyopic  myope  yes  reduced  not fitted  
+pre-presbyopic  myope  yes  mormal  hard  
+pre-presbyopic  pre-hypermetrope  no  reduced  not fitted  
+pre-presbyopic  pre-hypermetrope  no  mormal  soft  
+pre-presbyopic  pre-hypermetrope  yes  reduced  not fitted  
+pre-presbyopic  pre-hypermetrope  yes  mormal  not fitted  
+presbyopic  myope  no  reduced  not fitted  
+presbyopic  myope  no  mormal  not fitted  
+presbyopic  myope  yes  reduced  not fitted  
+presbyopic  myope  yes  mormal  hard  
+presbyopic  pre-hypermetrope  no  reduced  not fitted  
+presbyopic  pre-hypermetrope  no  mormal  soft  
+presbyopic  pre-hypermetrope  yes  reduced  not fitted  
+presbyopic  pre-hypermetrope  yes  mormal  not fitted  
+``` 
 使用下面的代码来读取数据集，以隐形眼镜数据集为例：
 ```python
 fr = open('./lenses.txt')
@@ -341,33 +415,27 @@ def classify(inputTree, featLabels, testVec):
                 classLabel = secondDict[key]
     return classLabel
 ```
-#### 持久化
+
+### 持久化
 得到分类器后可以持久化保存起来，下次使用时就不需要再训练一个分类器了，直接读取即可。
 ```python
 #存储树
 def storeTree(inputTree, filename):
-    import pickle
     fw = open(filename, 'w')
     pickle.dump(inputTree, fw)
     fw.close()
 
 #读取树
 def grabTree(filename):
-    import pickle
     fr = open(filename)
     return pickle.load(fr)
 ```
-demo
-```python
-decision_tree.storeTree(inputTree, './storage.txt')
-decision_tree.grabTree('./storage.txt')
-```
-#### 可视化
+
+### 可视化
 得到的树是一个Python的字典，不容易理解，我们可以将这个树画出来帮助我们看清楚结果。由于这部分不是决策树的重点内容，又涉及到matplotlib的使用，所以不作详述。  
 treePlotter.py:  
 ```python
 #-*- coding=utf-8 -*-
-import matplotlib.pyplot as plt
 
 plt.rcParams['font.sans-serif']=['SimHei'] #用来正常显示中文标签
 plt.rcParams['axes.unicode_minus']=False #用来正常显示负号
@@ -452,8 +520,7 @@ def createPlot(inTree):
     plt.show()
 ```
 
-#### 测试
-下面进行一些测试。  
+我们来看看可视化的效果如何。  
 西瓜数据集2.0:  
 ```python
 import decision_tree
@@ -480,17 +547,17 @@ treePlotter.createPlot(lensesTree)
 ```
 ![隐形眼镜数据集demo](./img/隐形眼镜数据集demo.png)  
 
-### 剪枝处理  
+### 剪枝  
 决策树的一个缺点是容易过拟合，所以可以通过主动去掉一些分支来降低过拟合的风险。主要有预剪枝和后剪枝两种策略。预剪枝是指在决策树生成过程中，对每个结点在划分前进行估计，若当前结点的划分不能带来决策树泛化性能提升，则停止划分并将该结点标记为叶结点。后剪枝则是先从训练集生成一棵完整的决策树，然后自底向上地对非叶结点进行考察，若将该结点对应的子树替换为叶结点能带来泛化能力的提升，则将该子树替换为叶结点。
-如何判断决策树的泛化能力是否提升呢？我们假定使用流出法，即预留出一部分数据用作“验证集”进行性能评估。  
+如何判断决策树的泛化能力是否提升呢？我们假定使用留出法，即预留出一部分数据用作“验证集”进行性能评估。 
+这里的篇幅比较多，我们先按下不表。 
 #### 预剪枝 
 
 #### 后剪枝 
 
 ### 连续和缺失值处理
 #### 连续值处理
-目前为止，我们的属性都是离散的，当遇到连续属性时，我们需要进行离散化，最简单的方法就是二分法。  
-![连续属性处理](./img/连续属性处理.png)  
+目前为止，我们的属性都是离散的，当遇到连续属性时，我们需要进行离散化，最简单的方法就是二分法（见西瓜书p83-p84）。   
 我们需要修改我们的代码来使其能处理连续的属性。  
 首先需要根据划分点划分集合：
 ```python
@@ -573,17 +640,92 @@ def chooseBestFeatureToSplit(dataSet,labels):
 demo:
 ![连续属性](./img/连续属性demo.png) 
 #### 缺失值处理
-我们简单的想会有两种方法，一种是直接放弃有缺失值的样本，但这样有可能会损失大量样本，另一种方法是使用有缺失属性值的样本来学习，由于时间和版面限制，不在这里详细介绍，有需要的可以看西瓜书4.4.2。  
+我们简单的想会有两种方法，一种是直接放弃有缺失值的样本，但这样有可能会损失大量样本，另一种方法是使用有缺失属性值的样本来学习。主要解决的是两个问题：1.如何在属性值缺失的情况下进行划分属性的选择；2.给定划分属性，若样本在该属性上的值缺失，如何对样本进行划分。详见西瓜书p85,这里直接上代码了。  
+```python
+def calD(dataSet,feature,w):
+    D = []
+    sub_w = []
+    for i,example in enumerate(dataSet):
+        if example[feature] != "":
+            D.append(example)
+            sub_w.append(w[i])
+    return D,sub_w
+
+def calRho(sub_w,w):
+    return sum(sub_w)/sum(w)
+
+def calP(subDataSet,k,sub_w):
+    D_kw = []
+    for i,example in enumerate(subDataSet):
+        if example[-1] == k:
+            D_kw.append(sub_w[i])
+    return sum(D_kw)/sum(sub_w)
+
+def calR(subDataSet,feature,v,sub_w):
+    D_vw = []
+    for i,example in enumerate(subDataSet):
+        if example[feature] == v:
+            D_vw.append(sub_w[i])
+    return sum(D_vw)/sum(sub_w)
+
+
+#信息熵推广形式
+def calEntPromotion(subDataSet,sub_w):
+    labelCounts = set(example[-1] for example in subDataSet)
+    Ent = 0.0
+    for k in labelCounts:
+        p = calP(subDataSet,k,sub_w)
+        Ent += - p*log(p,2)
+    return Ent
+
+#信息增益推广形式
+def calGainPromotion(dataSet, feature):
+    w = [1.0]*len(dataSet)
+    D,sub_w = calD(dataSet,feature,w)
+    rho = calRho(sub_w,w)
+    baseEnt = calEntPromotion(D,sub_w)
+    featList = [example[feature] for example in D]
+    uniqueVals = set(featList)
+    newEntropy = 0.0
+    for value in uniqueVals:
+        subDataSet = []
+        s_w = []
+        for i,example in enumerate(D):
+            if example[feature] == value:
+                subDataSet.append(example)
+                s_w.append(sub_w[i])
+        r = calR(subDataSet,feature,value,sub_w)
+        newEntropy += r*calEntPromotion(subDataSet,s_w)
+    Gain = rho*(baseEnt - newEntropy)
+    return Gain
+```
+我们测试一下：
+```python
+fr=open('./watermelon2.0_alpha.txt','r',encoding = 'utf8')
+dataSet=[inst.strip().split(',') for inst in fr.readlines()]
+for i in range(6):
+    print(missing_data.calGainPromotion(dataSet,i))
+```
+```bash
+0.2519658176560345
+0.17117826469165479
+0.14480291082655808
+0.42356026795361434
+0.2888253235151842
+0.005713029850070978
+```
+和书上一致，说明我们的计算没问题，第一个问题解决了。至于第二个问题，等我有时间了再写:)
+
 
 ### 最后
 #### 三种度量方法的偏好？
 限于知识和版面，我们不做数学上严密的论证，既然有了代码，不妨测试一下看看结果：  
 信息增益准则：  
-![信息增益准则](./img/信息增益准则.png)   
+![信息增益准则](./img/信息增益准则.png)    
 信息增益率准则：  
-![增益率准则](./img/增益率准则.png) 
+![增益率准则](./img/增益率准则.png)   
 基尼指数准则：  
-![基尼指数准则](./img/基尼指数准则.png) 
+![基尼指数准则](./img/基尼指数准则.png)   
 我们看到，在最优划分属性的选择上，他们确实是不同的，值得注意的是，在纹理=清晰这颗子树上，信息增益准则选择了属性根蒂（有三个取值），而信息增益率选择了属性触感（有两个取值），这个结果或多或少验证了我们之前所说的信息增益会对可取值数目较多的属性有所偏好，而信息增益率会对可取值数目较少的属性有所偏好。
 
 <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
