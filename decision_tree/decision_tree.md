@@ -13,7 +13,7 @@
   - <a href="#可视化">可视化</a> 
   - <a href="#剪枝">剪枝</a>   
   - <a href="#连续和缺失值处理">连续和缺失值处理</a> 
-  - <a href="#多变量">多变量</a> 
+ 
   - <a href="#最后">持久化</a> 
 
 ### 概述  
@@ -244,6 +244,7 @@ feature即所计算的特征的index，baseEnt就是Ent(D)，因为计算每个�
 因为**实际情况中信息增益准则对可取值数目较多的属性有所偏好**，为减少这种偏好带来的不利影响，可以使用**信息增益率**(gain ratio)来选择最优划分属性（C4.5决策树算法）。  
 
 $$Gain_ratio(D,a) = \frac{Gain(D,a)}{IV(a)} $$
+
 $$IV(a) = -\sum_{v=1}^V\frac{|D^v|}{D}log_2\frac{|D^v|}{D} $$
 
 IV(a)称为属性a的固有值(instrinsic value)。属性a的可能取值数目越多(即V越大)，则IV(a)的值通常会越大（从公式上看，也和信息熵相似）。  
@@ -264,6 +265,8 @@ def calGainRatio(dataSet, feature, baseEnt):
 上面都以信息熵为基础，也可以使用其他指标来度量，比如**基尼指数**(Gini index)。数据集D的纯度可以用基尼值来度量（CART决策树）：  
 
 $$Gini(D) = \sum_{k=1}^{|\lambda|}\sum_{k'\neq k}p_k p_{k'}$$
+
+
 $$=1-\sum_{k=1}^{|\lambda|}p_k^2$$
 
 ```python
@@ -288,7 +291,7 @@ def calGini(dataSet):
 直观来说，Gini(D反映了从数据集D中随机抽取两个样本，其类别标记不一致的概率。因此Gini(D)越小，则数据集D的纯度越高。
 属性a 的基尼指数定义为：  
 
-$$Gini_index(D,a) = \sum_{v=1}^V\frac{|D^v|}{D}Gini(D^v)$$
+$$GiniIndex(D,a) = \sum_{v=1}^V\frac{|D^v|}{D}Gini(D^v)$$
 
 ```python
 #计算基尼指数
@@ -304,7 +307,7 @@ def calGiniIndex(dataSet, feature):
 ```
 我们在候选属性集合A中，选择使得划分后基尼指数最小的属性，即：
 
-$$a_* = arg min_{a\in A}Gini_index(D,a)$$
+$$a_* = arg min_{a\in A}GiniIndex(D,a)$$
   
 ### 实现第一个决策树
 除了上面的计算各个指数的代码之外，我们还需要添加一些别的函数。  
