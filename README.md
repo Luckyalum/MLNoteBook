@@ -9,7 +9,7 @@
 因为主要围绕西瓜书，而西瓜书的理论部分足够多了，所以理论部分会较为简略（其实是数学公式太难编辑）。  
 :)
 Enjoy it ~
-[机器学习笔记](https://baoxizhao.com/mlnotebook/)  
+[机器学习笔记](https://baoxizhao.com//MLNoteBook/)  
 
 
 ### 目录
