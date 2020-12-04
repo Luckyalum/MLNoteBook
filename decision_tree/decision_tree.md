@@ -26,11 +26,8 @@
 - math
 - operator
 - itertools
-- pickle
-你可以直接使用下面的requirements.txt:
-```txt
-math==1.0.0
-```
+- pickle  
+
 每部分代码的开始，你可以用下面的代码来import相应的package
 ```python
 #-*- coding=utf-8 -*-
